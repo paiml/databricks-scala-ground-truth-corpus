@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gates:
+    name: Quality Gates (Jidoka)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+
+      - name: Cache sbt
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.cache/coursier
+            target
+          key: ${{ runner.os }}-sbt-${{ hashFiles('build.sbt', 'project/build.properties', 'project/plugins.sbt') }}
+          restore-keys: |
+            ${{ runner.os }}-sbt-
+
+      # Gate 1: Compile
+      - name: Gate 1 - Compile
+        run: sbt compile "Test / compile"
+
+      # Gate 2: Tests
+      - name: Gate 2 - Tests
+        run: sbt test
+
+      # Gate 3: Coverage (95% minimum enforced)
+      - name: Gate 3 - Coverage
+        run: sbt clean coverage test coverageReport
+
+      # Gate 4: Scaladoc
+      - name: Gate 4 - Documentation
+        run: sbt doc
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scoverage-report
+          path: |
+            target/scala-2.12/scoverage-report/
+            target/scala-2.12/coverage-report/cobertura.xml
