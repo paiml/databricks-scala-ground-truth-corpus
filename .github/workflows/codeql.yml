@@ -39,10 +39,10 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          build-mode: autobuild
+          build-mode: manual
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      - name: Build
+        run: sbt compile
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
