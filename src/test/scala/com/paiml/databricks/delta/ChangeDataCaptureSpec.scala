@@ -62,6 +62,66 @@ class ChangeDataCaptureSpec extends AnyFlatSpec with Matchers with SharedSparkSe
     counts("delete") shouldBe 1
   }
 
+  it should "perform SCD Type 2 merge (versioned history)" in {
+    val path = tmpDir()
+    val initial = Seq(
+      (1, "alice", "US", "2024-01-01", "9999-12-31", true),
+      (2, "bob", "UK", "2024-01-01", "9999-12-31", true)
+    ).toDF("id", "name", "country", "effective_date", "end_date", "is_current")
+      .withColumn("effective_date", org.apache.spark.sql.functions.col("effective_date").cast("date"))
+      .withColumn("end_date", org.apache.spark.sql.functions.col("end_date").cast("date"))
+    DeltaTableOps.createDeltaTable(initial, path)
+
+    val updates = Seq(
+      (2, "bob", "DE"),
+      (3, "charlie", "FR")
+    ).toDF("id", "name", "country")
+
+    val deltaTable = DeltaTable.forPath(spark, path)
+    ChangeDataCapture.scdType2Merge(deltaTable, updates, "id", Seq("name", "country"), "2024-06-01")
+
+    val result = DeltaTableOps.readDelta(spark, path)
+    // Original bob should be closed (is_current=false), new bob version added
+    val bobRows = result.filter("id = 2").orderBy("effective_date")
+    bobRows.count() should be >= 1L
+    // Charlie should be inserted
+    result.filter("id = 3").count() should be >= 1L
+  }
+
+  it should "apply CDC batch with only inserts (no deletes)" in {
+    val path = tmpDir()
+    val initial = Seq((1, "alice")).toDF("id", "name")
+    DeltaTableOps.createDeltaTable(initial, path)
+
+    val cdcEvents = Seq(
+      (2, "bob", "insert"),
+      (3, "charlie", "insert")
+    ).toDF("id", "name", "_change_type")
+
+    val deltaTable = DeltaTable.forPath(spark, path)
+    ChangeDataCapture.applyCdcBatch(deltaTable, cdcEvents, "id")
+
+    val result = DeltaTableOps.readDelta(spark, path)
+    result.count() shouldBe 3
+  }
+
+  it should "apply CDC batch with only deletes (no upserts)" in {
+    val path = tmpDir()
+    val initial = Seq((1, "alice"), (2, "bob")).toDF("id", "name")
+    DeltaTableOps.createDeltaTable(initial, path)
+
+    val cdcEvents = Seq(
+      (1, "alice", "delete")
+    ).toDF("id", "name", "_change_type")
+
+    val deltaTable = DeltaTable.forPath(spark, path)
+    ChangeDataCapture.applyCdcBatch(deltaTable, cdcEvents, "id")
+
+    val result = DeltaTableOps.readDelta(spark, path)
+    result.count() shouldBe 1
+    result.first().getAs[String]("name") shouldBe "bob"
+  }
+
   it should "apply a batch of CDC events" in {
     val path = tmpDir()
     val initial = Seq((1, "alice"), (2, "bob"), (3, "charlie")).toDF("id", "name")

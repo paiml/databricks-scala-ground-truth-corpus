@@ -53,6 +53,15 @@ class SqlOpsSpec extends AnyFlatSpec with Matchers with SharedSparkSession {
     plan should not be empty
   }
 
+  it should "attempt CTAS (requires catalog in production)" in {
+    val df = Seq((1, "alice"), (2, "bob")).toDF("id", "name")
+    SqlOps.registerTempView(df, "ctas_source")
+    // CTAS requires Hive/Unity Catalog — exercises code path in local mode
+    an [Exception] should be thrownBy {
+      SqlOps.createTableAs(spark, "ctas_result", "SELECT * FROM ctas_source")
+    }
+  }
+
   it should "drop a table without error" in {
     noException should be thrownBy {
       SqlOps.dropTable(spark, "nonexistent_table_xyz")

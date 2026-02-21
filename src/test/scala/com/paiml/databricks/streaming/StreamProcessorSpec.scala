@@ -67,6 +67,35 @@ class StreamProcessorSpec extends AnyFlatSpec with Matchers with SharedSparkSess
     stream.isStreaming shouldBe true
   }
 
+  it should "write a stream to delta" in {
+    val path = Files.createTempDirectory("delta-write-").toAbsolutePath.toString
+    val checkpointPath = Files.createTempDirectory("delta-cp-").toAbsolutePath.toString
+    val stream = StreamProcessor.rateStream(spark, 100)
+
+    val query = StreamProcessor.writeToDelta(
+      stream, path, checkpointPath,
+      trigger = org.apache.spark.sql.streaming.Trigger.Once()
+    )
+    try {
+      query.awaitTermination()
+    } finally {
+      if (query.isActive) query.stop()
+    }
+  }
+
+  it should "write a stream to console" in {
+    val stream = StreamProcessor.rateStream(spark, 100)
+    val query = StreamProcessor.writeToConsole(
+      stream,
+      trigger = org.apache.spark.sql.streaming.Trigger.Once()
+    )
+    try {
+      query.awaitTermination()
+    } finally {
+      if (query.isActive) query.stop()
+    }
+  }
+
   it should "create a delta stream" in {
     val path = Files.createTempDirectory("delta-stream-").toAbsolutePath.toString
     import spark.implicits._

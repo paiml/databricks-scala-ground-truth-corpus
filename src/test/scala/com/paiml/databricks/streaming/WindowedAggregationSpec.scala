@@ -38,13 +38,40 @@ class WindowedAggregationSpec extends AnyFlatSpec with Matchers with SharedSpark
     windowed.schema.fieldNames should contain allOf ("event_count", "total_value")
   }
 
-  it should "create windowed multi-metric aggregation" in {
+  it should "create windowed multi-metric aggregation with avg" in {
     val stream = StreamProcessor.rateStream(spark, 100)
-    val metrics = Map("value" -> "sum", "value" -> "avg")
+    val metrics = Map("value" -> "avg")
     val windowed = WindowedAggregation.windowedMultiMetric(
       stream, "timestamp", "10 seconds", metrics, "30 seconds"
     )
     windowed.isStreaming shouldBe true
+    windowed.schema.fieldNames should contain("value_avg")
+  }
+
+  it should "exercise all aggregation branches in windowedMultiMetric" in {
+    val stream = StreamProcessor.rateStream(spark, 100)
+      .withColumn("v1", org.apache.spark.sql.functions.col("value"))
+      .withColumn("v2", org.apache.spark.sql.functions.col("value"))
+      .withColumn("v3", org.apache.spark.sql.functions.col("value"))
+      .withColumn("v4", org.apache.spark.sql.functions.col("value"))
+      .withColumn("v5", org.apache.spark.sql.functions.col("value"))
+
+    val metrics = Map(
+      "v1" -> "count",
+      "v2" -> "sum",
+      "v3" -> "min",
+      "v4" -> "max",
+      "v5" -> "unknown"
+    )
+    val windowed = WindowedAggregation.windowedMultiMetric(
+      stream, "timestamp", "10 seconds", metrics, "30 seconds"
+    )
+    windowed.isStreaming shouldBe true
+    windowed.schema.fieldNames should contain("v1_count")
+    windowed.schema.fieldNames should contain("v2_sum")
+    windowed.schema.fieldNames should contain("v3_min")
+    windowed.schema.fieldNames should contain("v4_max")
+    windowed.schema.fieldNames should contain("v5_count") // unknown defaults to count
   }
 
   it should "process tumbling window with memory sink" in {

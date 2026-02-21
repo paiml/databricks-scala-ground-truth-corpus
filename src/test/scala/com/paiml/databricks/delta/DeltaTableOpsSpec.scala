@@ -96,6 +96,42 @@ class DeltaTableOpsSpec extends AnyFlatSpec with Matchers with SharedSparkSessio
     DeltaTableOps.currentVersion(deltaTable) shouldBe 0L
   }
 
+  it should "update rows matching a condition" in {
+    val path = tmpDir()
+    val df = Seq((1, "alice", 100), (2, "bob", 200)).toDF("id", "name", "amount")
+    DeltaTableOps.createDeltaTable(df, path)
+
+    val deltaTable = DeltaTable.forPath(spark, path)
+    DeltaTableOps.updateWhere(deltaTable, "id = 1", Map("amount" -> "999"))
+
+    val result = DeltaTableOps.readDelta(spark, path)
+    result.filter("id = 1").first().getAs[Int]("amount") shouldBe 999
+  }
+
+  it should "read a Delta table at a timestamp" in {
+    val path = tmpDir()
+    val df = Seq((1, "v0")).toDF("id", "data")
+    DeltaTableOps.createDeltaTable(df, path)
+
+    // Get the timestamp of version 0 from history
+    val deltaTable = DeltaTable.forPath(spark, path)
+    val hist = DeltaTableOps.history(deltaTable, 1)
+    val ts = hist.select("timestamp").first().getTimestamp(0).toString
+
+    val result = DeltaTableOps.readDeltaTimestamp(spark, path, ts)
+    result.count() shouldBe 1
+    result.first().getString(1) shouldBe "v0"
+  }
+
+  it should "vacuum a Delta table" in {
+    val path = tmpDir()
+    val df = Seq((1, "alice")).toDF("id", "name")
+    DeltaTableOps.createDeltaTable(df, path)
+
+    val deltaTable = DeltaTable.forPath(spark, path)
+    noException should be thrownBy DeltaTableOps.vacuum(deltaTable, 168.0)
+  }
+
   it should "compact small files" in {
     val path = tmpDir()
     val df = Seq((1, "a"), (2, "b"), (3, "c")).toDF("id", "name")

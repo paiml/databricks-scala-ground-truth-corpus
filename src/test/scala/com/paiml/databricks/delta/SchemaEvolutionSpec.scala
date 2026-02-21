@@ -131,6 +131,33 @@ class SchemaEvolutionSpec
     result.columns should not contain "name"
   }
 
+  it should "evolve a DataFrame with all default types" in {
+    val df = Seq(1).toDF("id")
+    val target = StructType(Seq(
+      StructField("id", IntegerType),
+      StructField("name", StringType),
+      StructField("big_id", LongType),
+      StructField("score", DoubleType),
+      StructField("weight", FloatType),
+      StructField("amount", DecimalType(10, 2)),
+      StructField("data", BinaryType)
+    ))
+    val result = SchemaEvolution.evolveToSchema(df, target)
+    result.columns should contain allOf ("id", "name", "big_id", "score", "weight", "amount", "data")
+    val row = result.first()
+    row.getInt(0) shouldBe 1
+  }
+
+  it should "report nullability mismatches" in {
+    val df = Seq(Some(1)).toDF("id")
+    val expected = StructType(Seq(
+      StructField("id", IntegerType, nullable = false)
+    ))
+    val errors = SchemaEvolution.validateSchema(df, expected)
+    errors should have length 1
+    errors.head should include("Nullability mismatch")
+  }
+
   it should "identify safe schema evolution (additions only)" in {
     val safe = SchemaChanges(added = Seq("email"), removed = Seq.empty,
       typeChanged = Seq.empty, nullabilityChanged = Seq.empty)
