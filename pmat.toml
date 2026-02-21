@@ -1,0 +1,57 @@
+# PMAT Project Configuration
+# databricks-scala-ground-truth-corpus — A Grade Target
+
+[project]
+name = "databricks-scala-ground-truth-corpus"
+version = "0.1.0"
+language = "scala"
+
+[quality_gate]
+min_test_coverage = 90.0
+target_test_coverage = 95.0
+max_cyclomatic_complexity = 15
+max_cognitive_complexity = 12
+max_satd_comments = 0
+min_mutation_score = 80.0
+min_repo_score = 85
+target_repo_score = 95
+
+[tdg]
+min_grade = "B+"
+target_grade = "A"
+enforce_on_commit = true
+auto_fail_on_critical_defects = true
+
+[known_defects]
+detect_unwrap_calls = false
+detect_null_checks = true
+detect_mutable_state = true
+
+[certeza]
+enabled = true
+tiered_workflow = true
+
+[certeza.tier1]
+targets = ["scalafmt-check", "compile"]
+max_duration_seconds = 30
+
+[certeza.tier2]
+targets = ["tier1", "test"]
+max_duration_seconds = 300
+
+[certeza.tier3]
+targets = ["tier2", "coverage-check"]
+max_duration_seconds = 600
+
+[certeza.tier4]
+targets = ["tier3", "doc"]
+max_duration_seconds = 1200
+
+[commit]
+require_ticket = true
+ticket_pattern = "DSGTC-\\d+"
+require_co_author = true
+
+[analysis]
+include = ["src/main/scala/**/*.scala", "src/test/scala/**/*.scala"]
+exclude = ["target/**", "project/**"]

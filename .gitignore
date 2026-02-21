@@ -1,0 +1,24 @@
+# sbt
+target/
+project/target/
+project/project/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.bsp/
+.metals/
+.bloop/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+scoverage-data/
+
+# Temp
+*.swp
+*.swo
+*~
