@@ -23,6 +23,7 @@
 - [x] DSGTC-016: describeTable returns schema info
 - [x] DSGTC-017: explainQuery returns non-empty plan
 - [x] DSGTC-018: dropTable handles nonexistent tables
+- [x] DSGTC-124: createTableAs exercises CTAS code path
 
 ### UdfRegistry
 - [x] DSGTC-019: normalizeWhitespace trims and collapses spaces
@@ -106,12 +107,18 @@
 - [x] DSGTC-079: history returns version log
 - [x] DSGTC-080: currentVersion returns latest version number
 - [x] DSGTC-081: compact reduces file count
+- [x] DSGTC-116: updateWhere modifies matching rows
+- [x] DSGTC-117: readDeltaTimestamp retrieves version at timestamp
+- [x] DSGTC-118: vacuum removes old file versions
 
 ### ChangeDataCapture
 - [x] DSGTC-082: detectChanges classifies insert/update/delete
 - [x] DSGTC-083: scdType1Merge overwrites and inserts
 - [x] DSGTC-084: changeSummary counts by type
 - [x] DSGTC-085: applyCdcBatch processes mixed events
+- [x] DSGTC-119: scdType2Merge closes old records and inserts new versions
+- [x] DSGTC-120: applyCdcBatch with inserts only (no deletes)
+- [x] DSGTC-121: applyCdcBatch with deletes only (no upserts)
 
 ### SchemaEvolution
 - [x] DSGTC-086: compareSchemas detects added columns
@@ -122,7 +129,9 @@
 - [x] DSGTC-091: validateSchema passes for conforming DataFrame
 - [x] DSGTC-092: validateSchema reports missing columns
 - [x] DSGTC-093: validateSchema reports type mismatches
+- [x] DSGTC-122: validateSchema reports nullability mismatches
 - [x] DSGTC-094: evolveToSchema adds default columns
+- [x] DSGTC-123: evolveToSchema handles all default types (String, Long, Double, Float, Decimal, Binary)
 - [x] DSGTC-095: writeWithSchemaMerge adds new columns
 - [x] DSGTC-096: writeWithSchemaOverwrite replaces schema
 - [x] DSGTC-097: isSafeEvolution rejects removals and type changes
@@ -138,12 +147,15 @@
 - [x] DSGTC-103: jsonFileStream creates streaming reader
 - [x] DSGTC-104: csvFileStream creates streaming reader
 - [x] DSGTC-105: deltaStream reads from Delta as stream
+- [x] DSGTC-125: writeToDelta writes stream to Delta path
+- [x] DSGTC-126: writeToConsole writes stream to console output
 
 ### WindowedAggregation
 - [x] DSGTC-106: tumblingWindowCount produces count/total/average
 - [x] DSGTC-107: slidingWindowStats produces 5-metric stats
 - [x] DSGTC-108: windowedGroupBy groups by key within windows
-- [x] DSGTC-109: windowedMultiMetric aggregates custom metrics
+- [x] DSGTC-109: windowedMultiMetric aggregates avg metric
+- [x] DSGTC-127: windowedMultiMetric exercises all agg branches (count/sum/min/max/default)
 - [x] DSGTC-110: tumbling window processes via memory sink
 
 ### StreamingJoin
@@ -151,8 +163,11 @@
 - [x] DSGTC-112: enrichWithLookup broadcasts lookup table
 - [x] DSGTC-113: stream-static join writes to memory
 - [x] DSGTC-114: dynamicLookupJoinFn creates foreachBatch function
+- [x] DSGTC-128: dynamicLookupJoinFn lambda body executes join logic
 - [x] DSGTC-115: left outer stream-static join preserves unmatched
+- [x] DSGTC-129: streamStreamJoin performs watermarked inner join
+- [x] DSGTC-130: streamStreamLeftJoin performs watermarked left outer join
 
 ---
 
-**Total: 115 falsification tests across 4 domains**
+**Total: 130 falsification tests across 4 domains**
